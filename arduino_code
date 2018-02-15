@@ -1,0 +1,174 @@
+#include <Adafruit_NeoPixel.h>
+#define PIN 2 //on met le DN de la barre de led sur la pin 6 sur arduino 
+#define PIN_ALIM_BT 12
+#define PIN_ALIM_BT2 5
+#define PIN_ALIM_BT3 3
+#define PIN_ALIM_BT4 4
+#define BT_PIN_ROUGE 8 // on met le bouton rouge sur la pin 8
+#define BT_PIN_VERT 9 // on met le bouton vert sur la pin 9
+#define BT_PIN_BLEU 10 // on met le bouton bleu sur la pin 10
+#define BT_PIN_JAUNE 11 // on met le bouton jaune sur la pin 11
+
+#define NBR_LED 60 // on définit le nombre de leds présentent sur les barres de led
+
+#define BLUE   0x0000FF 
+#define RED    0xFF0000
+#define GREEN  0x00FF00
+#define YELLOW 0xFFFF00
+#define OFF    0x000000
+#define WHITE  0xffffff
+
+int lastButtonStateRouge = 0;
+int buttonStateRouge =0;
+int buttonPushCounterRouge=0;
+
+int lastButtonStateVert = 0;
+int buttonStateVert =0;
+int buttonPushCounterVert=0;
+
+int lastButtonStateBleu = 0;
+int buttonStateBleu =0;
+int buttonPushCounterBleu=0;
+
+int lastButtonStateJaune = 0;
+int buttonStateJaune =0;
+int buttonPushCounterJaune=0;
+
+
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(NBR_LED, PIN, NEO_GRB + NEO_KHZ800);
+
+//gere l'animation des led pour l'appuie sur un bouton, j'allume la led pos à la coleur demandé et j'eteint la led pos-1
+void avance(int pos,long color)
+{
+    strip.setPixelColor(pos,color);
+    strip.setPixelColor(pos-1,OFF);
+    strip.show(); // très important la fonction strip show envoie la commande à la barre de led 
+}
+
+//animation du départ de jeu
+void animLancement()
+{
+  //fait défiler la couleur Bleu
+  for(int i= 0;i<NBR_LED;i++)
+  {
+    strip.setPixelColor(i,WHITE);
+    strip.show();   
+    delay(20);
+    strip.setPixelColor(i,OFF);
+    strip.show();
+  }
+  
+}
+//animation de fin de jeu
+void animFinJeu(long color){
+    for(int k=0; k<NBR_LED; k++){
+        strip.setPixelColor(k,color); 
+        strip.setPixelColor(k-1,OFF);
+        strip.show();
+        delay(20);
+    }
+}
+
+void lectureBouton(){
+   buttonStateRouge = digitalRead(BT_PIN_ROUGE);
+   buttonStateVert = digitalRead(BT_PIN_VERT);
+   buttonStateJaune = digitalRead(BT_PIN_JAUNE);
+   buttonStateBleu = digitalRead(BT_PIN_BLEU);  
+   
+  /* Serial.print("bt Rouge :");
+   Serial.print(buttonStateRouge);
+   Serial.print(" bt Vert : ");
+   Serial.print(buttonStateVert);
+   Serial.print("bt Bleu :");
+   Serial.print(buttonStateBleu);
+   Serial.print(" bt Jaune : ");
+   Serial.print(buttonStateJaune);
+   Serial.println("**");*/
+}
+
+
+void setup()
+{
+  Serial.begin(9600);
+  strip.begin();//mettre 5 volts sur l'interrupteur 
+  
+  pinMode(PIN_ALIM_BT,OUTPUT);
+  digitalWrite(PIN_ALIM_BT,HIGH);
+  pinMode(PIN_ALIM_BT2,OUTPUT);
+  digitalWrite(PIN_ALIM_BT2,HIGH);
+  pinMode(PIN_ALIM_BT3,OUTPUT);
+  digitalWrite(PIN_ALIM_BT3,HIGH);
+  pinMode(PIN_ALIM_BT4,OUTPUT);
+  digitalWrite(PIN_ALIM_BT4,HIGH);
+  
+  pinMode(BT_PIN_ROUGE,INPUT);
+  pinMode(BT_PIN_VERT,INPUT);
+  pinMode(BT_PIN_BLEU,INPUT);
+  pinMode(BT_PIN_JAUNE,INPUT);
+  
+  strip.show();
+  animLancement();
+  Serial.println("**********************************end of setup*************************");
+}
+
+void testBouton(int *oldState,int newState,int *counter,long color)
+{
+    //je test si le bouton à changer 
+   if (newState != *oldState) {
+    //si le bt à changer je sauvegarde sa nouvelle valeur
+    Serial.println("newState");
+     *oldState = newState; 
+     //si le bt est à haut j'avanve
+     if( newState == HIGH) {
+      *counter = *counter+1;
+      Serial.println(*counter);
+      avance(*counter,color);
+     }
+   }
+
+}
+
+void resetCounter(){
+ buttonPushCounterRouge=0;
+ buttonPushCounterVert=0; 
+ buttonPushCounterBleu=0;
+ buttonPushCounterJaune=0; 
+   
+}
+
+void loop()
+{
+   //lecture des bouttons
+   lectureBouton();   
+      
+   testBouton(&lastButtonStateRouge,buttonStateRouge,&buttonPushCounterRouge,RED);
+   testBouton(&lastButtonStateVert,buttonStateVert,&buttonPushCounterVert,GREEN);
+   testBouton(&lastButtonStateBleu,buttonStateBleu,&buttonPushCounterBleu,BLUE);
+   testBouton(&lastButtonStateJaune,buttonStateJaune,&buttonPushCounterJaune,YELLOW);
+   //testBouton(int oldState,int newState,int counter,long color)
+   //testBouton(int oldState,int newState,int counter,long color)
+   //testBouton(int oldState,int newState,int counter,long color)
+
+  //condition victoire ? 
+  if(buttonPushCounterRouge >NBR_LED-1){
+        animFinJeu(RED);
+        resetCounter();
+        animLancement();  
+   }
+   //
+   if(buttonPushCounterVert >NBR_LED-1){
+        animFinJeu(GREEN);
+        resetCounter();
+        animLancement();  
+   } 
+   if(buttonPushCounterBleu >NBR_LED-1){
+        animFinJeu(BLUE);
+        resetCounter();
+        animLancement();  
+   } 
+   if(buttonPushCounterJaune >NBR_LED-1){
+        animFinJeu(YELLOW);
+        resetCounter();
+        animLancement();  
+   } 
+}
